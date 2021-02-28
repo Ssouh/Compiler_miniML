@@ -116,9 +116,9 @@ let rec value_of_expr (expr,mem) env =
   match expr with
     | (FunctionNode (_,_)) -> ruleFunction expr mem env
     | (CallNode (fexpr,pexpr)) -> ruleCallByValue fexpr pexpr mem env    
-(*
-    | (CallNode (fexpr,pexpr)) -> ruleCallByName fexpr pexpr mem env 
-    *)
+
+  (*  | (CallNode (fexpr,pexpr)) -> ruleCallByName fexpr pexpr mem env *)
+    
     | (IfthenelseNode (cond,bthen,belse)) -> ruleIf cond bthen belse mem env 
     | (LetNode (ident,bvalue,bin)) -> ruleLet ident bvalue bin mem env
     | (LetrecNode (ident,bvalue,bin)) -> ruleLetrec ident bvalue bin  mem env
@@ -132,7 +132,7 @@ let rec value_of_expr (expr,mem) env =
     | (ReadNode expr) -> ruleRead expr mem env
     | (WriteNode (refexpr,valexpr)) -> ruleWrite refexpr valexpr mem env
     | (SequenceNode (left, right)) -> ruleSequence left right mem env
-    | (WhileNode (cond, body)) -> ruleWhile cond body mem env
+    | (WhileNode (cond, body)) -> ruleWhile cond body mem env 
     | (RefNode expr) -> ruleReference expr mem env
 
 and 
@@ -254,17 +254,19 @@ and
 (* .............................................................................*)
 
 ruleFunction expr mem env = 
-  ( (FrozenValue (expr,env)), mem)
+  ((FrozenValue (expr,env)), mem)
 
-(* Appel par nom 
+(*
 and
+ Appel par nom 
+
 (* .............................................................................*)
 (*   ruleCallByName : Ast.ast -> Ast.ast -> memory -> environment               *)
 (*      -> (ValueType * memory)                                                 *)
 (* .............................................................................*)
 
 ruleCallByName fexpr pexpr mem env = 
-  match (value_of_expr fexpr env) with
+  match (value_of_expr (fexpr,mem) env) with
   | (FrozenValue (fexpr,fenv)) ->
     (match fexpr with
     | (FunctionNode (fpar,fbody)) ->
@@ -272,8 +274,8 @@ ruleCallByName fexpr pexpr mem env =
     | _ -> (ErrorValue TypeMismatchError))
   | (ErrorValue _) as result -> result
   | _ -> (ErrorValue TypeMismatchError)
-*)
 
+*)
 and
 (* .............................................................................*)
 (*  ruleCallByValue : Ast.ast -> Ast.ast -> memory -> environment               *)
@@ -386,6 +388,24 @@ ruleSequence left right mem env =
       | (ErrorValue _) as result -> (result,leftmem)
       | NullValue -> (value_of_expr (right,leftmem) env)
       |_ -> ((ErrorValue TypeMismatchError),leftmem)))
+
+
+and
+(* .............................................................................*)
+(*   ruleWhile : Ast.ast -> Ast.ast -> memory -> environment                 *)
+(*      -> (ValueType * memory)                                                 *)
+(* .............................................................................*)
+
+ruleWhile cond body mem env = 
+let (condvalue, mem1) = (value_of_expr (cond, mem) env) in
+  match condvalue with
+  | (ErrorValue _) as result -> (result, mem1)
+  | (BooleanValue boolean) -> let (bodyvalue, membody) = (value_of_expr (cond, mem1) env) in 
+    if boolean then (ruleWhile cond body membody env)
+    else (NullValue, membody)
+  | _ ->  ((ErrorValue TypeMismatchError), mem1)
+(* ...............A COMPLETER .......................................*)
+
 and
 (* .............................................................................*)
 (*   ruleReference : Ast.ast -> memory -> environment                           *)

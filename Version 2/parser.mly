@@ -23,7 +23,7 @@ open Ast
 %token PlusToken, MinusToken
 %token StarToken, SlashToken
 %token RefToken, DerefToken
-%token UMinusToken
+%token UMinusToken NotToken
 
 (* priorité et associativité *)
 (* Plus faible priorité au début *)
@@ -38,7 +38,7 @@ open Ast
 %nonassoc LesserToken, GreaterToken, LesserEqualToken, GreaterEqualToken
 %left PlusToken, MinusToken
 %left StarToken, SlashToken
-%left RefToken, DerefToken, UMinusToken
+%right RefToken, DerefToken, UMinusToken, NotToken
 
 
 
@@ -60,6 +60,7 @@ La grammaire n'est pas LR , on joue avec les priorités
   E -> (E) E
   E -> (E)
   E -> - E
+  E -> not E
   E -> ref E
   E -> ! E
   E -> E := E
@@ -89,7 +90,8 @@ expr :
 | e = expr SequenceToken p = expr                                    {SequenceNode(e,p)}
 | LeftParenthesisToken f = expr RightParenthesisToken  p =expr       {CallNode (f,p)}
 | LeftParenthesisToken e = expr RightParenthesisToken                {e}
-| MinusToken  e = expr            %prec UMinusToken                  {UnaryNode (Negate,e)}
+| MinusToken  e = expr            %prec UMinusToken                  {UnaryNode (Opposite,e)}
+| NotToken e = expr                                                  {UnaryNode (Negation,e)}
 | RefToken e = expr                                                  {RefNode e}
 | DerefToken e = expr                                                {ReadNode e}
 | i = expr AssignToken e = expr                                      {WriteNode(i,e)}
